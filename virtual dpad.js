@@ -1,46 +1,36 @@
 (async function () {
     "use strict";
 
-    /*
-     * HaxBall Mobile - D-Pad Edition
-     * Based on VixelDevelopment/HaxballMobile old.min.js
-     *
-     * Controls:
-     *   ▲ = W
-     *   ▼ = S
-     *   ◀ = A
-     *   ▶ = D
-     *   KICK = X (original button is preserved)
-     */
-
     const ORIGINAL_SCRIPT =
         "https://raw.githubusercontent.com/VixelDevelopment/HaxballMobile/main/old.min.js";
 
-    // ------------------------------------------------------------
-    // Load original HaxBall Mobile script
-    // ------------------------------------------------------------
+    // ============================================================
+    // LOAD OLD.MIN.JS
+    // ============================================================
 
     try {
         const response = await fetch(ORIGINAL_SCRIPT);
 
         if (!response.ok) {
             throw new Error(
-                "Tidak dapat mengambil old.min.js (" +
-                response.status +
-                ")"
+                "Gagal mengambil old.min.js: HTTP " +
+                response.status
             );
         }
 
-        const originalCode = await response.text();
+        const code = await response.text();
 
         const script = document.createElement("script");
-        script.textContent = originalCode;
+        script.textContent = code;
 
         document.documentElement.appendChild(script);
         script.remove();
 
     } catch (error) {
-        console.error("HaxBall D-Pad:", error);
+        console.error(
+            "HaxBall D-Pad gagal:",
+            error
+        );
 
         alert(
             "HaxBall Mobile gagal dimuat.\n\n" +
@@ -50,79 +40,93 @@
         return;
     }
 
-    // ------------------------------------------------------------
-    // Wait until original controls exist
-    // ------------------------------------------------------------
 
-    function waitForControls(callback) {
+    // ============================================================
+    // TUNGGU SAMPAI OLD.MIN.JS SELESAI MEMBUAT KONTROL
+    // ============================================================
 
-        let attempts = 0;
+    function waitForControls() {
 
         const timer = setInterval(function () {
 
-            attempts++;
-
-            const originalJoystick =
+            const joystick =
                 document.querySelector("#joystick");
 
             const kick =
                 document.querySelector("#kick");
 
-            const gameFrame =
-                document.querySelector(".gameframe");
+            if (joystick && kick) {
 
-            if (
-                originalJoystick &&
-                kick &&
-                gameFrame &&
-                gameFrame.contentWindow
-            ) {
-                clearInterval(timer);
-                callback(
-                    originalJoystick,
-                    kick,
-                    gameFrame.contentWindow
-                );
-            }
-
-            // Stop after approximately 30 seconds
-            if (attempts > 300) {
                 clearInterval(timer);
 
-                console.error(
-                    "HaxBall D-Pad: controls tidak ditemukan."
+                createDPad(
+                    joystick,
+                    kick
                 );
             }
 
         }, 100);
+
     }
 
-    // ------------------------------------------------------------
-    // Create D-Pad
-    // ------------------------------------------------------------
 
-    function createDPad(originalJoystick, kick, gameWindow) {
+    // ============================================================
+    // BUAT D-PAD
+    // ============================================================
 
-        // Don't create twice
-        if (document.querySelector("#haxball-dpad")) {
+    function createDPad(
+        originalJoystick,
+        kickButton
+    ) {
+
+        // Jangan dibuat dua kali
+        if (
+            document.querySelector("#haxball-dpad")
+        ) {
             return;
         }
 
-        // Hide the original analog joystick
-        originalJoystick.style.display = "none";
 
-        // --------------------------------------------------------
+        // ========================================================
+        // GAME FRAME
+        // ========================================================
+
+        let gameFrame = null;
+
+        try {
+
+            gameFrame =
+                document.querySelector(
+                    ".gameframe"
+                ).contentWindow;
+
+        } catch (e) {
+
+            console.error(
+                "Game frame tidak ditemukan."
+            );
+
+            return;
+        }
+
+
+        // ========================================================
         // CSS
-        // --------------------------------------------------------
+        // ========================================================
 
-        const style = document.createElement("style");
+        const style =
+            document.createElement("style");
 
-        style.id = "haxball-dpad-style";
+        style.id =
+            "haxball-dpad-style";
 
         style.textContent = `
+
             #haxball-dpad {
+
                 position: absolute;
-                z-index: 99999;
+
+                z-index: 9999;
 
                 display: grid;
 
@@ -134,33 +138,47 @@
 
                 gap: 4px;
 
+                box-sizing: border-box;
+
                 touch-action: none;
+
                 user-select: none;
+
                 -webkit-user-select: none;
 
-                box-sizing: border-box;
+                -webkit-tap-highlight-color:
+                    transparent;
             }
 
+
             .hbd-button {
+
                 display: flex;
 
                 justify-content: center;
+
                 align-items: center;
 
                 box-sizing: border-box;
 
-                background: rgba(194,194,194,.33);
+                background:
+                    rgba(194,194,194,.33);
 
-                border-radius: 18px;
+                color:
+                    rgba(236,240,243,.90);
 
-                color: rgba(236,240,243,.85);
+                border-radius: 18%;
 
                 font-size: 1.4rem;
+
                 font-weight: bold;
 
                 box-shadow:
-                    6px 6px 10px rgba(165,171,177,.20),
-                    -5px -5px 9px rgba(165,171,177,.20);
+                    6px 6px 10px
+                    rgba(165,171,177,.20),
+
+                    -5px -5px 9px
+                    rgba(165,171,177,.20);
 
                 touch-action: none;
 
@@ -168,158 +186,241 @@
                     transparent;
             }
 
+
             .hbd-button:active {
-                transform: scale(.93);
+
+                transform: scale(.92);
 
                 background:
                     rgba(194,194,194,.50);
             }
 
+
             #hbd-up {
+
                 grid-column: 2;
+
                 grid-row: 1;
             }
 
+
             #hbd-left {
+
                 grid-column: 1;
+
                 grid-row: 2;
             }
+
 
             #hbd-down {
+
                 grid-column: 2;
+
                 grid-row: 2;
             }
 
+
             #hbd-right {
+
                 grid-column: 3;
+
                 grid-row: 2;
             }
+
         `;
 
         document.head.appendChild(style);
 
-        // --------------------------------------------------------
-        // D-Pad container
-        // --------------------------------------------------------
 
-        const dpad = document.createElement("div");
+        // ========================================================
+        // BUAT CONTAINER D-PAD
+        // ========================================================
 
-        dpad.id = "haxball-dpad";
+        const dpad =
+            document.createElement("div");
 
-        dpad.setAttribute("view", "hidden");
+        dpad.id =
+            "haxball-dpad";
+
+        dpad.setAttribute(
+            "view",
+            "hidden"
+        );
 
         document.body.appendChild(dpad);
 
-        // --------------------------------------------------------
-        // Read original HaxBall Mobile settings
-        // --------------------------------------------------------
 
-        function getSettings() {
+        // ========================================================
+        // BACA SETTING KONTROL LAMA
+        // Size / Margin / Opacity
+        // ========================================================
 
-            let settings = [20, 5, 1];
+        function getControlsSettings() {
+
+            let values = [20, 5, 1];
 
             try {
 
                 const saved =
                     JSON.parse(
-                        localStorage.getItem("controls")
+                        localStorage.getItem(
+                            "controls"
+                        )
                     );
 
                 if (
                     Array.isArray(saved) &&
                     saved.length >= 3
                 ) {
-                    settings = saved;
+
+                    values = saved;
                 }
 
-            } catch {}
+            } catch (e) {}
 
-            return settings;
+            return {
+
+                size:
+                    Number(values[0]) || 20,
+
+                margin:
+                    Number(values[1]) || 5,
+
+                opacity:
+                    Number(values[2]) || 1
+
+            };
         }
 
-        // --------------------------------------------------------
-        // Position / size
-        // --------------------------------------------------------
+
+        // ========================================================
+        // POSISI D-PAD
+        // ========================================================
 
         function updateDPadStyle() {
 
-            const settings = getSettings();
+            const settings =
+                getControlsSettings();
 
-            const width = Number(settings[0]) || 20;
-            const margin = Number(settings[1]) || 5;
-            const opacity = Number(settings[2]) || 1;
+
+            // Sedikit lebih besar dari joystick lama
+            const size =
+                settings.size * 1.5;
+
 
             dpad.style.width =
-                (width * 1.5) + "%";
+                size + "%";
 
             dpad.style.height =
-                (width * 1.5) + "%";
+                size + "%";
+
 
             dpad.style.left =
-                margin + "%";
+                settings.margin + "%";
+
 
             dpad.style.bottom =
-                margin + "vw";
+                settings.margin + "vw";
+
 
             dpad.style.opacity =
-                opacity;
+                settings.opacity;
         }
+
 
         updateDPadStyle();
 
-        // --------------------------------------------------------
-        // Keyboard input
-        // --------------------------------------------------------
 
-        const pressed = new Set();
+        // ========================================================
+        // INPUT KEYBOARD HAXBALL
+        // Menggunakan sistem yang sama dengan old.min.js
+        // ========================================================
 
-        function sendKey(code, type) {
+        const pressed =
+            new Set();
+
+
+        function sendKeyboard(
+            code,
+            type
+        ) {
 
             try {
 
-                gameWindow.document.dispatchEvent(
-                    new KeyboardEvent(type, {
-                        code: code,
-                        bubbles: true,
-                        cancelable: true
-                    })
+                gameFrame.document.dispatchEvent(
+
+                    new KeyboardEvent(
+                        type,
+                        {
+                            code: code,
+
+                            bubbles: true,
+
+                            cancelable: true
+                        }
+                    )
+
                 );
 
-            } catch (error) {
-
-                console.error(
-                    "HaxBall D-Pad keyboard error:",
-                    error
-                );
-            }
+            } catch (e) {}
         }
+
 
         function updateKeys() {
 
-            const keys = {
+            const keyCodes = {
+
                 w: "KeyW",
+
                 a: "KeyA",
+
                 s: "KeyS",
+
                 d: "KeyD"
+
             };
 
-            for (const key in keys) {
 
-                const isPressed =
-                    pressed.has(key);
+            // Kirim status setiap tombol
+            for (
+                const key in keyCodes
+            ) {
 
-                sendKey(
-                    keys[key],
-                    isPressed
-                        ? "keydown"
-                        : "keyup"
-                );
+                if (
+                    pressed.has(key)
+                ) {
+
+                    sendKeyboard(
+                        keyCodes[key],
+                        "keydown"
+                    );
+
+                } else {
+
+                    sendKeyboard(
+                        keyCodes[key],
+                        "keyup"
+                    );
+                }
             }
         }
 
-        // --------------------------------------------------------
-        // Button creation
-        // --------------------------------------------------------
+
+        // ========================================================
+        // RESET
+        // ========================================================
+
+        function resetKeys() {
+
+            pressed.clear();
+
+            updateKeys();
+        }
+
+
+        // ========================================================
+        // BUAT TOMBOL D-PAD
+        // ========================================================
 
         function makeButton(
             id,
@@ -338,216 +439,257 @@
             button.textContent =
                 symbol;
 
-            function press(event) {
 
-                event.preventDefault();
-                event.stopPropagation();
+            function press(e) {
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
 
                 pressed.add(key);
 
                 updateKeys();
 
-                // Prevent the browser from scrolling
+
+                // Support multi-touch
                 if (
-                    event.pointerId !== undefined &&
+                    e.pointerId !== undefined &&
                     button.setPointerCapture
                 ) {
+
                     try {
+
                         button.setPointerCapture(
-                            event.pointerId
+                            e.pointerId
                         );
-                    } catch {}
+
+                    } catch (error) {}
                 }
             }
 
-            function release(event) {
 
-                event.preventDefault();
-                event.stopPropagation();
+            function release(e) {
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
 
                 pressed.delete(key);
 
                 updateKeys();
             }
 
-            // Modern Android touch/pointer support
+
             button.addEventListener(
                 "pointerdown",
                 press,
-                { passive: false }
+                {
+                    passive: false
+                }
             );
+
 
             button.addEventListener(
                 "pointerup",
                 release,
-                { passive: false }
+                {
+                    passive: false
+                }
             );
+
 
             button.addEventListener(
                 "pointercancel",
                 release,
-                { passive: false }
+                {
+                    passive: false
+                }
             );
+
 
             button.addEventListener(
                 "pointerleave",
                 release,
-                { passive: false }
+                {
+                    passive: false
+                }
             );
+
 
             return button;
         }
 
-        // --------------------------------------------------------
-        // Add buttons
-        // --------------------------------------------------------
+
+        // ========================================================
+        // MASUKKAN 4 TOMBOL
+        // ========================================================
 
         dpad.appendChild(
+
             makeButton(
                 "hbd-up",
                 "▲",
                 "w"
             )
+
         );
 
+
         dpad.appendChild(
+
             makeButton(
                 "hbd-left",
                 "◀",
                 "a"
             )
+
         );
 
+
         dpad.appendChild(
+
             makeButton(
                 "hbd-down",
                 "▼",
                 "s"
             )
+
         );
 
+
         dpad.appendChild(
+
             makeButton(
                 "hbd-right",
                 "▶",
                 "d"
             )
+
         );
 
-        // --------------------------------------------------------
-        // Show / hide depending on game state
-        // --------------------------------------------------------
+
+        // ========================================================
+        // IKUTI STATUS JOYSTICK ASLI
+        // old.min.js menggunakan:
+        // view="visible"
+        // view="hidden"
+        // ========================================================
 
         function updateVisibility() {
 
-            const original =
-                document.querySelector("#joystick");
-
-            const game =
-                document.querySelector(
-                    ".game-view"
+            const state =
+                originalJoystick.getAttribute(
+                    "view"
                 );
 
-            const room =
-                document.querySelector(
-                    ".room-view"
-                );
 
             if (
-                game &&
-                !room
+                state === "visible"
             ) {
+
+                dpad.setAttribute(
+                    "view",
+                    "visible"
+                );
 
                 dpad.style.display =
                     "grid";
 
-                if (original) {
-                    original.style.display =
-                        "none";
-                }
-
             } else {
+
+                dpad.setAttribute(
+                    "view",
+                    "hidden"
+                );
 
                 dpad.style.display =
                     "none";
 
-                pressed.clear();
-
-                updateKeys();
+                resetKeys();
             }
         }
 
+
         updateVisibility();
 
-        // --------------------------------------------------------
-        // Watch HaxBall page changes
-        // --------------------------------------------------------
+
+        // ========================================================
+        // PANTAU PERUBAHAN VIEW DARI OLD.MIN.JS
+        // ========================================================
 
         const observer =
-            new MutationObserver(function () {
+            new MutationObserver(
+                function () {
 
-                updateVisibility();
-                updateDPadStyle();
+                    updateVisibility();
 
-                const original =
-                    document.querySelector(
-                        "#joystick"
-                    );
+                    updateDPadStyle();
 
-                if (original) {
-                    original.style.display =
-                        "none";
                 }
-            });
+            );
+
 
         observer.observe(
-            document.body,
+            originalJoystick,
             {
-                childList: true,
-                subtree: true
+                attributes: true,
+
+                attributeFilter: [
+                    "view"
+                ]
             }
         );
 
-        // --------------------------------------------------------
-        // Reset when page loses focus
-        // --------------------------------------------------------
+
+        // ========================================================
+        // PANTAU LOCAL STORAGE
+        // UNTUK SIZE / MARGIN / OPACITY
+        // ========================================================
+
+        window.addEventListener(
+            "storage",
+            function () {
+
+                updateDPadStyle();
+
+            }
+        );
+
+
+        // ========================================================
+        // RESET SAAT HALAMAN KEHILANGAN FOCUS
+        // ========================================================
 
         window.addEventListener(
             "blur",
-            function () {
-
-                pressed.clear();
-
-                updateKeys();
-            }
+            resetKeys
         );
+
 
         document.addEventListener(
             "visibilitychange",
             function () {
 
-                if (document.hidden) {
+                if (
+                    document.hidden
+                ) {
 
-                    pressed.clear();
-
-                    updateKeys();
+                    resetKeys();
                 }
             }
         );
 
+
         console.log(
-            "%cHaxBall Mobile D-Pad loaded!",
+            "%cHaxBall D-Pad berhasil dipasang!",
             "color:#00ff88;font-weight:bold"
         );
 
     }
 
-    // ------------------------------------------------------------
-    // Start
-    // ------------------------------------------------------------
 
-    waitForControls(
-        createDPad
-    );
+    waitForControls();
 
 })();
