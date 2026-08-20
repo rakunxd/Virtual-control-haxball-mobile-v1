@@ -122,6 +122,12 @@
 
         style.textContent = `
 
+        #joystick {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
             #haxball-dpad {
 
                 position: absolute;
