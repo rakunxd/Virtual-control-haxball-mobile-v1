@@ -5,7 +5,7 @@ here(async function () {
         "https://raw.githubusercontent.com/VixelDevelopment/HaxballMobile/main/old.min.js";
 
     // ============================================================
-    // LOAD HAXBALL MOBILE ORIGINAL
+    // LOAD ORIGINAL HAXBALL MOBILE
     // ============================================================
 
     try {
@@ -18,28 +18,22 @@ here(async function () {
             );
         }
 
-        const originalCode = await response.text();
+        const code = await response.text();
 
-        const originalScript =
-            document.createElement("script");
+        const script = document.createElement("script");
 
-        originalScript.textContent = originalCode;
+        script.textContent = code;
 
-        document.documentElement.appendChild(
-            originalScript
-        );
+        document.documentElement.appendChild(script);
 
-        originalScript.remove();
+        script.remove();
 
     } catch (error) {
 
-        console.error(
-            "HaxBall D-Pad:",
-            error
-        );
+        console.error(error);
 
         alert(
-            "HaxBall Mobile gagal dimuat.\n\n" +
+            "HaxBall Mobile gagal dimuat:\n\n" +
             error.message
         );
 
@@ -48,78 +42,34 @@ here(async function () {
 
 
     // ============================================================
-    // TUNGGU KONTROL ASLI
+    // TUNGGU JOYSTICK ASLI
     // ============================================================
 
-    function waitForControls() {
+    const wait = setInterval(function () {
 
-        const timer = setInterval(function () {
+        const joystick =
+            document.querySelector("#joystick");
 
-            const joystick =
-                document.querySelector("#joystick");
+        if (!joystick) {
+            return;
+        }
 
-            const kick =
-                document.querySelector("#kick");
+        clearInterval(wait);
 
-            if (joystick && kick) {
+        installDPad(joystick);
 
-                clearInterval(timer);
-
-                createDPad(
-                    joystick,
-                    kick
-                );
-            }
-
-        }, 100);
-    }
+    }, 100);
 
 
     // ============================================================
-    // BUAT D-PAD
+    // INSTALL D-PAD
     // ============================================================
 
-    function createDPad(
-        originalJoystick,
-        kickButton
-    ) {
+    function installDPad(originalJoystick) {
 
         if (
             document.querySelector("#haxball-dpad")
         ) {
-            return;
-        }
-
-
-        // ========================================================
-        // CARI GAME FRAME
-        // ========================================================
-
-        let gameFrame;
-
-        try {
-
-            const frame =
-                document.querySelector(
-                    ".gameframe"
-                );
-
-            if (!frame) {
-                throw new Error(
-                    "gameframe tidak ditemukan"
-                );
-            }
-
-            gameFrame =
-                frame.contentWindow;
-
-        } catch (error) {
-
-            console.error(
-                "HaxBall D-Pad:",
-                error
-            );
-
             return;
         }
 
@@ -136,55 +86,55 @@ here(async function () {
 
         style.textContent = `
 
-            /* ===================================================
-               HILANGKAN JOYSTICK ANALOG ASLI
-               =================================================== */
+            /* ==============================================
+               HILANGKAN JOYSTICK ANALOG
+               ============================================== */
 
             #joystick {
+
                 display: none !important;
+
                 visibility: hidden !important;
+
                 opacity: 0 !important;
 
                 pointer-events: none !important;
 
                 width: 0 !important;
+
                 height: 0 !important;
 
                 min-width: 0 !important;
+
                 min-height: 0 !important;
 
-                max-width: 0 !important;
-                max-height: 0 !important;
-
                 overflow: hidden !important;
-
-                transform: scale(0) !important;
             }
 
 
             #joystick #thumb {
+
                 display: none !important;
+
                 visibility: hidden !important;
+
                 opacity: 0 !important;
 
                 pointer-events: none !important;
-
-                width: 0 !important;
-                height: 0 !important;
             }
 
 
-            /* ===================================================
+            /* ==============================================
                D-PAD
-               =================================================== */
+               ============================================== */
 
             #haxball-dpad {
 
                 position: absolute;
 
-                z-index: 99999;
+                z-index: 999999;
 
-                display: grid;
+                display: none;
 
                 grid-template-columns:
                     repeat(3, 1fr);
@@ -209,28 +159,29 @@ here(async function () {
             }
 
 
-            /* ===================================================
+            /* ==============================================
                TOMBOL
-               =================================================== */
+               ============================================== */
 
             .hbd-button {
 
                 display: flex;
 
+                align-items: center;
+
                 justify-content: center;
 
-                align-items: center;
+                width: 100%;
+
+                height: 100%;
 
                 box-sizing: border-box;
 
-                width: 100%;
-                height: 100%;
-
                 background:
-                    rgba(194,194,194,0.33);
+                    rgba(194,194,194,.33);
 
                 color:
-                    rgba(236,240,243,0.90);
+                    rgba(236,240,243,.90);
 
                 border-radius: 18px;
 
@@ -240,10 +191,10 @@ here(async function () {
 
                 box-shadow:
                     6px 6px 10px
-                    rgba(165,171,177,0.20),
+                    rgba(165,171,177,.20),
 
                     -5px -5px 9px
-                    rgba(165,171,177,0.20);
+                    rgba(165,171,177,.20);
 
                 touch-action: none;
 
@@ -259,22 +210,22 @@ here(async function () {
             .hbd-button:active {
 
                 transform:
-                    scale(0.92);
+                    scale(.92);
 
                 background:
-                    rgba(194,194,194,0.55);
+                    rgba(194,194,194,.55);
             }
 
 
-            /* ===================================================
-               POSISI D-PAD
+            /* ==============================================
+               POSISI
 
-                       ▲
+                         ▲
 
-                   ◀       ▶
+                     ◀       ▶
 
-                       ▼
-               =================================================== */
+                         ▼
+               ============================================== */
 
             #hbd-up {
 
@@ -313,7 +264,7 @@ here(async function () {
 
 
         // ========================================================
-        // CONTAINER D-PAD
+        // CONTAINER
         // ========================================================
 
         const dpad =
@@ -322,16 +273,34 @@ here(async function () {
         dpad.id =
             "haxball-dpad";
 
-        dpad.setAttribute(
-            "view",
-            "hidden"
-        );
-
         document.body.appendChild(dpad);
 
 
         // ========================================================
-        // SETTING KONTROL
+        // GAME FRAME
+        // ========================================================
+
+        let gameFrame;
+
+        try {
+
+            gameFrame =
+                document.querySelector(
+                    ".gameframe"
+                ).contentWindow;
+
+        } catch (error) {
+
+            console.error(
+                "Game frame tidak ditemukan."
+            );
+
+            return;
+        }
+
+
+        // ========================================================
+        // SETTING LAMA
         // ========================================================
 
         function getSettings() {
@@ -376,18 +345,13 @@ here(async function () {
 
 
         // ========================================================
-        // POSISI D-PAD
+        // UKURAN DAN POSISI
         // ========================================================
 
-        function updateDPadStyle() {
+        function updateStyle() {
 
             const settings =
                 getSettings();
-
-            /*
-             * 1.5x ukuran joystick lama
-             * agar tombol tetap mudah ditekan.
-             */
 
             const size =
                 settings.size * 1.5;
@@ -409,43 +373,79 @@ here(async function () {
         }
 
 
-        updateDPadStyle();
+        updateStyle();
 
 
         // ========================================================
-        // INPUT HAXBALL
+        // INPUT
         // ========================================================
 
         const pressed =
             new Set();
 
 
-        function sendKey(
-            code,
-            type
-        ) {
+        function emulateKeys(str) {
+
+            const keys = {
+
+                w: "keyup",
+
+                a: "keyup",
+
+                s: "keyup",
+
+                d: "keyup"
+            };
+
+
+            for (
+                let i = 0;
+                i < str.length;
+                i++
+            ) {
+
+                keys[str[i]] =
+                    "keydown";
+            }
+
 
             try {
 
                 gameFrame.document.dispatchEvent(
-
                     new KeyboardEvent(
-                        type,
+                        keys.w,
                         {
-                            key:
-                                code === "KeyW"
-                                    ? "w"
-                                    : code === "KeyA"
-                                    ? "a"
-                                    : code === "KeyS"
-                                    ? "s"
-                                    : "d",
+                            code: "KeyW"
+                        }
+                    )
+                );
 
-                            code: code,
 
-                            bubbles: true,
+                gameFrame.document.dispatchEvent(
+                    new KeyboardEvent(
+                        keys.a,
+                        {
+                            code: "KeyA"
+                        }
+                    )
+                );
 
-                            cancelable: true
+
+                gameFrame.document.dispatchEvent(
+                    new KeyboardEvent(
+                        keys.s,
+                        {
+                            code: "KeyS"
+                        }
+                    )
+                );
+
+
+                gameFrame.document.dispatchEvent(
+                    new KeyboardEvent(
+                        keys.d,
+                        {
+                            code: "KeyD"
                         }
                     )
                 );
@@ -456,59 +456,46 @@ here(async function () {
 
         function updateKeys() {
 
-            const keyCodes = {
+            let result = "";
 
-                w: "KeyW",
-
-                a: "KeyA",
-
-                s: "KeyS",
-
-                d: "KeyD"
-            };
-
-
-            for (
-                const key in keyCodes
+            if (
+                pressed.has("w")
             ) {
-
-                const code =
-                    keyCodes[key];
-
-                if (
-                    pressed.has(key)
-                ) {
-
-                    sendKey(
-                        code,
-                        "keydown"
-                    );
-
-                } else {
-
-                    sendKey(
-                        code,
-                        "keyup"
-                    );
-                }
+                result += "w";
             }
+
+            if (
+                pressed.has("a")
+            ) {
+                result += "a";
+            }
+
+            if (
+                pressed.has("s")
+            ) {
+                result += "s";
+            }
+
+            if (
+                pressed.has("d")
+            ) {
+                result += "d";
+            }
+
+            emulateKeys(result);
         }
 
-
-        // ========================================================
-        // RESET INPUT
-        // ========================================================
 
         function resetKeys() {
 
             pressed.clear();
 
-            updateKeys();
+            emulateKeys("");
         }
 
 
         // ========================================================
-        // BUAT TOMBOL D-PAD
+        // BUAT TOMBOL
         // ========================================================
 
         function createButton(
@@ -529,7 +516,7 @@ here(async function () {
                 symbol;
 
 
-            function press(event) {
+            function down(event) {
 
                 event.preventDefault();
 
@@ -540,15 +527,9 @@ here(async function () {
                 updateKeys();
 
 
-                /*
-                 * Menjaga tombol tetap aktif
-                 * ketika jari masih menyentuhnya.
-                 */
-
                 if (
                     event.pointerId !==
-                        undefined &&
-                    button.setPointerCapture
+                        undefined
                 ) {
 
                     try {
@@ -562,7 +543,7 @@ here(async function () {
             }
 
 
-            function release(event) {
+            function up(event) {
 
                 event.preventDefault();
 
@@ -576,7 +557,7 @@ here(async function () {
 
             button.addEventListener(
                 "pointerdown",
-                press,
+                down,
                 {
                     passive: false
                 }
@@ -585,7 +566,7 @@ here(async function () {
 
             button.addEventListener(
                 "pointerup",
-                release,
+                up,
                 {
                     passive: false
                 }
@@ -594,7 +575,7 @@ here(async function () {
 
             button.addEventListener(
                 "pointercancel",
-                release,
+                up,
                 {
                     passive: false
                 }
@@ -603,7 +584,7 @@ here(async function () {
 
             button.addEventListener(
                 "pointerleave",
-                release,
+                up,
                 {
                     passive: false
                 }
@@ -615,11 +596,10 @@ here(async function () {
 
 
         // ========================================================
-        // MASUKKAN 4 TOMBOL
+        // 4 TOMBOL
         // ========================================================
 
         dpad.appendChild(
-
             createButton(
                 "hbd-up",
                 "▲",
@@ -629,7 +609,6 @@ here(async function () {
 
 
         dpad.appendChild(
-
             createButton(
                 "hbd-left",
                 "◀",
@@ -639,7 +618,6 @@ here(async function () {
 
 
         dpad.appendChild(
-
             createButton(
                 "hbd-right",
                 "▶",
@@ -649,7 +627,6 @@ here(async function () {
 
 
         dpad.appendChild(
-
             createButton(
                 "hbd-down",
                 "▼",
@@ -659,16 +636,78 @@ here(async function () {
 
 
         // ========================================================
-        // SINKRONISASI DENGAN OLD.MIN.JS
+        // TAMPIL / SEMBUNYI
         // ========================================================
 
         function updateVisibility() {
 
             /*
-             * Joystick asli tetap dipakai sebagai
-             * indikator kapan kontrol harus aktif,
-             * tetapi tidak boleh terlihat.
+             * old.min.js sendiri menggunakan:
+             *
+             * view="visible"
+             * view="hidden"
+             *
+             * untuk kontrol.
              */
+
+            const visible =
+                originalJoystick.getAttribute(
+                    "view"
+                ) === "visible";
+
+
+            if (visible) {
+
+                dpad.style.display =
+                    "grid";
+
+            } else {
+
+                dpad.style.display =
+                    "none";
+
+                resetKeys();
+            }
+
+
+            updateStyle();
+        }
+
+
+        updateVisibility();
+
+
+        // ========================================================
+        // PANTAU PERUBAHAN OLD.MIN.JS
+        // ========================================================
+
+        const observer =
+            new MutationObserver(
+                function () {
+
+                    updateVisibility();
+
+                }
+            );
+
+
+        observer.observe(
+            originalJoystick,
+            {
+                attributes: true,
+
+                attributeFilter: [
+                    "view"
+                ]
+            }
+        );
+
+
+        // ========================================================
+        // PAKSA ANALOG TETAP HILANG
+        // ========================================================
+
+        setInterval(function () {
 
             originalJoystick.style.setProperty(
                 "display",
@@ -694,103 +733,11 @@ here(async function () {
                 "important"
             );
 
-
-            const state =
-                originalJoystick.getAttribute(
-                    "view"
-                );
-
-
-            if (
-                state === "visible"
-            ) {
-
-                dpad.style.display =
-                    "grid";
-
-                dpad.setAttribute(
-                    "view",
-                    "visible"
-                );
-
-            } else {
-
-                dpad.style.display =
-                    "none";
-
-                dpad.setAttribute(
-                    "view",
-                    "hidden"
-                );
-
-                resetKeys();
-            }
-        }
-
-
-        updateVisibility();
+        }, 100);
 
 
         // ========================================================
-        // PANTAU JOYSTICK LAMA
-        // ========================================================
-
-        const observer =
-            new MutationObserver(
-                function () {
-
-                    /*
-                     * Paksa analog tetap hilang
-                     */
-
-                    originalJoystick.style.setProperty(
-                        "display",
-                        "none",
-                        "important"
-                    );
-
-                    originalJoystick.style.setProperty(
-                        "visibility",
-                        "hidden",
-                        "important"
-                    );
-
-                    originalJoystick.style.setProperty(
-                        "opacity",
-                        "0",
-                        "important"
-                    );
-
-                    originalJoystick.style.setProperty(
-                        "pointer-events",
-                        "none",
-                        "important"
-                    );
-
-
-                    updateVisibility();
-
-                    updateDPadStyle();
-                }
-            );
-
-
-        observer.observe(
-            originalJoystick,
-            {
-                attributes: true,
-
-                attributeFilter: [
-                    "view",
-                    "style",
-                    "class"
-                ]
-            }
-        );
-
-
-        // ========================================================
-        // RESET SAAT KELUAR DARI GAME
+        // RESET SAAT KELUAR
         // ========================================================
 
         window.addEventListener(
@@ -813,21 +760,10 @@ here(async function () {
         );
 
 
-        // ========================================================
-        // SELESAI
-        // ========================================================
-
         console.log(
-            "%cHaxBall Mobile D-Pad aktif!",
+            "%cHaxBall D-Pad aktif!",
             "color:#00ff88;font-weight:bold"
         );
     }
-
-
-    // ============================================================
-    // START
-    // ============================================================
-
-    waitForControls();
 
 })();
