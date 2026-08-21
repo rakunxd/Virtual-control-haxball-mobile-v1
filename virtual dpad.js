@@ -1,4 +1,4 @@
-here(async function () {
+(async function () {
     "use strict";
 
     const ORIGINAL_SCRIPT =
