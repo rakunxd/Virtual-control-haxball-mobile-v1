@@ -114,6 +114,10 @@
                 grid-template-rows: repeat(3, 1fr);
                 gap: 2%;
                 box-sizing: border-box;
+                /* Kunci rasio 1:1. Hanya "width" yang di-set lewat JS,
+                   "height" otomatis mengikuti supaya selalu persegi,
+                   berapapun rasio layar HP-nya. */
+                aspect-ratio: 1 / 1;
                 /* beri ruang untuk hit-slop tombol supaya tidak kepotong container */
                 overflow: visible;
                 touch-action: none;
@@ -207,8 +211,9 @@
             const settings = getSettings();
             // Ukuran DISAMAKAN dengan joystick asli (bukan dikali 1.5)
             // supaya tidak menindih tombol kick di kanan.
+            // Height TIDAK di-set manual — biar aspect-ratio:1/1 di CSS
+            // yang menjaga kotaknya selalu persegi.
             dpad.style.width = settings.size + "%";
-            dpad.style.height = settings.size + "%";
             dpad.style.left = settings.margin + "%";
             dpad.style.bottom = settings.margin + "vw";
             dpad.style.opacity = settings.opacity;
