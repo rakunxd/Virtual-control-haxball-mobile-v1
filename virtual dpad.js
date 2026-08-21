@@ -112,8 +112,10 @@
                 display: none;
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(3, 1fr);
-                gap: 6%;
+                gap: 2%;
                 box-sizing: border-box;
+                /* beri ruang untuk hit-slop tombol supaya tidak kepotong container */
+                overflow: visible;
                 touch-action: none;
                 user-select: none;
                 -webkit-user-select: none;
@@ -122,6 +124,7 @@
             }
 
             .hbd-button {
+                position: relative;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -139,6 +142,19 @@
                 user-select: none;
                 -webkit-user-select: none;
                 -webkit-tap-highlight-color: transparent;
+            }
+
+            /* Perbesar area yang bisa disentuh TANPA mengubah tampilan
+               visual tombol. Ini yang bikin tombol terasa "kena" lebih
+               mudah walau ukurannya kelihatan kecil di layar. */
+            .hbd-button::before {
+                content: "";
+                position: absolute;
+                top: -16px;
+                left: -16px;
+                right: -16px;
+                bottom: -16px;
+                pointer-events: auto;
             }
 
             .hbd-button.hbd-active {
