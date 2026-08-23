@@ -12,6 +12,15 @@
         "https://raw.githubusercontent.com/VixelDevelopment/HaxballMobile/main/old.min.js";
 
     // ============================================================
+    // POSISI & UKURAN D-PAD (independen dari setting joystick/kick,
+    // supaya ubah ini tidak ikut mengubah tombol kick di kanan)
+    // Ganti angka ini kalau mau geser/perbesar D-pad-nya.
+    // ============================================================
+    const DPAD_WIDTH_PERCENT = 19;  // lebar, % dari lebar layar
+    const DPAD_LEFT_PERCENT = 5;    // jarak dari kiri, % dari lebar layar
+    const DPAD_BOTTOM_VW = 3;       // jarak dari bawah, dalam vw
+
+    // ============================================================
     // MUAT SCRIPT DASAR (HANYA JIKA BELUM ADA)
     // ============================================================
 
@@ -192,7 +201,8 @@
         }
 
         // ========================================================
-        // SETTING (ukuran & posisi ikut pengaturan joystick asli)
+        // SETTING (opacity ikut pengaturan bersama, ukuran & posisi
+        // pakai konstanta DPAD_* di atas supaya tidak ganggu kick)
         // ========================================================
         function getSettings() {
             let settings = [20, 5, 1];
@@ -201,21 +211,17 @@
                 if (Array.isArray(saved) && saved.length >= 3) settings = saved;
             } catch (error) {}
             return {
-                size: Number(settings[0]) || 20,
-                margin: Number(settings[1]) || 5,
                 opacity: Number(settings[2]) || 1
             };
         }
 
         function updateStyle() {
             const settings = getSettings();
-            // Ukuran DISAMAKAN dengan joystick asli (bukan dikali 1.5)
-            // supaya tidak menindih tombol kick di kanan.
             // Height TIDAK di-set manual — biar aspect-ratio:1/1 di CSS
             // yang menjaga kotaknya selalu persegi.
-            dpad.style.width = settings.size + "%";
-            dpad.style.left = settings.margin + "%";
-            dpad.style.bottom = settings.margin + "vw";
+            dpad.style.width = DPAD_WIDTH_PERCENT + "%";
+            dpad.style.left = DPAD_LEFT_PERCENT + "%";
+            dpad.style.bottom = DPAD_BOTTOM_VW + "vw";
             dpad.style.opacity = settings.opacity;
         }
         updateStyle();
