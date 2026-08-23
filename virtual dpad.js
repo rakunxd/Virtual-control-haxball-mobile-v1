@@ -119,16 +119,14 @@
                 position: absolute;
                 z-index: 999999;
                 display: none;
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-                gap: 2%;
                 box-sizing: border-box;
+                border-radius: 50%;
+                background: rgba(194,194,194,.22);
+                box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
                 /* Kunci rasio 1:1. Hanya "width" yang di-set lewat JS,
                    "height" otomatis mengikuti supaya selalu persegi,
                    berapapun rasio layar HP-nya. */
                 aspect-ratio: 1 / 1;
-                /* beri ruang untuk hit-slop tombol supaya tidak kepotong container */
-                overflow: visible;
                 touch-action: none;
                 user-select: none;
                 -webkit-user-select: none;
@@ -136,49 +134,40 @@
                 -webkit-tap-highlight-color: transparent;
             }
 
-            .hbd-button {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                height: 100%;
-                box-sizing: border-box;
-                background: rgba(194,194,194,.33);
-                color: rgba(236,240,243,.90);
-                border-radius: 18px;
-                font-size: 1.45rem;
-                font-weight: bold;
-                box-shadow: 6px 6px 10px rgba(165,171,177,.20),
-                            -5px -5px 9px rgba(165,171,177,.20);
-                touch-action: none;
-                user-select: none;
-                -webkit-user-select: none;
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            /* Perbesar area yang bisa disentuh TANPA mengubah tampilan
-               visual tombol. Ini yang bikin tombol terasa "kena" lebih
-               mudah walau ukurannya kelihatan kecil di layar. */
-            .hbd-button::before {
+            /* Garis pembatas 8 sektor arah, cuma visual (dekoratif) */
+            #haxball-dpad::before {
                 content: "";
                 position: absolute;
-                top: -16px;
-                left: -16px;
-                right: -16px;
-                bottom: -16px;
-                pointer-events: auto;
+                inset: 0;
+                border-radius: 50%;
+                background:
+                    linear-gradient(0deg,   transparent 49.3%, rgba(255,255,255,.15) 49.3%, rgba(255,255,255,.15) 50.7%, transparent 50.7%),
+                    linear-gradient(90deg,  transparent 49.3%, rgba(255,255,255,.15) 49.3%, rgba(255,255,255,.15) 50.7%, transparent 50.7%),
+                    linear-gradient(45deg,  transparent 49.3%, rgba(255,255,255,.12) 49.3%, rgba(255,255,255,.12) 50.7%, transparent 50.7%),
+                    linear-gradient(135deg, transparent 49.3%, rgba(255,255,255,.12) 49.3%, rgba(255,255,255,.12) 50.7%, transparent 50.7%);
+                pointer-events: none;
             }
 
-            .hbd-button.hbd-active {
-                transform: scale(.92);
-                background: rgba(194,194,194,.55);
+            /* Knob yang digeser jari — posisinya diatur lewat JS (transform) */
+            #haxball-dpad-knob {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 42%;
+                height: 42%;
+                margin-top: -21%;
+                margin-left: -21%;
+                border-radius: 50%;
+                background: rgba(230,234,238,.75);
+                box-shadow: 4px 4px 8px rgba(0,0,0,.18),
+                            -3px -3px 6px rgba(255,255,255,.15);
+                pointer-events: none;
+                transition: background-color .08s ease;
             }
 
-            #hbd-up    { grid-column: 2; grid-row: 1; }
-            #hbd-left  { grid-column: 1; grid-row: 2; }
-            #hbd-right { grid-column: 3; grid-row: 2; }
-            #hbd-down  { grid-column: 2; grid-row: 3; }
+            #haxball-dpad-knob.hbd-active {
+                background: rgba(255,255,255,.92);
+            }
         `;
         document.head.appendChild(style);
 
@@ -188,6 +177,10 @@
         const dpad = document.createElement("div");
         dpad.id = "haxball-dpad";
         document.body.appendChild(dpad);
+
+        const knob = document.createElement("div");
+        knob.id = "haxball-dpad-knob";
+        dpad.appendChild(knob);
 
         // ========================================================
         // GAME FRAME
@@ -227,9 +220,31 @@
         updateStyle();
 
         // ========================================================
-        // INPUT
+        // INPUT — drag satu jari, arah di-snap ke 8 sektor 45°
+        // (kombinasi WASD), knob mengikuti jari dengan halus supaya
+        // tidak ada jeda "kaku" saat pindah arah seperti di tombol
+        // terpisah, tapi tetap presisi/gampang seperti D-pad karena
+        // toleransi tiap sektor lebar (45°), bukan derajat presisi
+        // penuh seperti analog asli.
         // ========================================================
-        const pressed = new Set();
+        const DEAD_ZONE_PERCENT = 0.16; // jari harus geser minimal segini (dari radius) biar kepencet arah
+        const KNOB_MAX_PERCENT = 0.42;  // batas geser knob secara visual (biar gak keluar pad)
+
+        // Urutan sektor 45°, mulai dari kanan (0°) searah jarum jam
+        const SECTORS = [
+            { angleDeg: 0, keys: "d" },
+            { angleDeg: 45, keys: "sd" },
+            { angleDeg: 90, keys: "s" },
+            { angleDeg: 135, keys: "as" },
+            { angleDeg: 180, keys: "a" },
+            { angleDeg: 225, keys: "aw" },
+            { angleDeg: 270, keys: "w" },
+            { angleDeg: 315, keys: "wd" }
+        ];
+
+        let currentKeys = "";
+        let activePointerId = null;
+        let activeTouchId = null;
 
         function emulateKeys(str) {
             const keys = { w: "keyup", a: "keyup", s: "keyup", d: "keyup" };
@@ -242,82 +257,111 @@
             } catch (error) {}
         }
 
-        function updateKeys() {
-            let result = "";
-            if (pressed.has("w")) result += "w";
-            if (pressed.has("a")) result += "a";
-            if (pressed.has("s")) result += "s";
-            if (pressed.has("d")) result += "d";
-            emulateKeys(result);
+        function setKeys(str) {
+            if (str === currentKeys) return; // cuma kirim event kalau memang berubah
+            currentKeys = str;
+            emulateKeys(str);
         }
 
         function resetKeys() {
-            pressed.clear();
-            emulateKeys("");
+            setKeys("");
+            knob.style.transform = "translate(-50%, -50%)";
+            knob.classList.remove("hbd-active");
         }
+        // knob default posisi tengah (karena top/left:50% + margin negatif sudah menengahkan,
+        // transform tambahan dipakai untuk pergeseran relatif dari titik tengah itu)
+        knob.style.transform = "translate(-50%, -50%)";
 
-        // ========================================================
-        // BUAT TOMBOL — pakai Touch Events DAN Pointer Events
-        // sekaligus supaya kompatibel di WebView Injecthor yang
-        // dukungan Pointer Event-nya kadang tidak stabil.
-        // ========================================================
-        function createButton(id, symbol, key) {
-            const button = document.createElement("div");
-            button.id = id;
-            button.className = "hbd-button";
-            button.textContent = symbol;
+        function handleMove(clientX, clientY) {
+            const rect = dpad.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = clientX - cx;
+            const dy = clientY - cy;
+            const radius = rect.width / 2;
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
-            let activeTouchId = null;
+            // Posisikan knob mengikuti jari, dibatasi supaya tidak keluar pad
+            const maxKnobOffset = radius * (1 - KNOB_MAX_PERCENT * 0.55);
+            const clampedDistance = Math.min(distance, maxKnobOffset);
+            const angleRad = Math.atan2(dy, dx);
+            const knobX = Math.cos(angleRad) * clampedDistance;
+            const knobY = Math.sin(angleRad) * clampedDistance;
+            knob.style.transform =
+                "translate(calc(-50% + " + knobX + "px), calc(-50% + " + knobY + "px))";
 
-            function down(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                pressed.add(key);
-                updateKeys();
-                button.classList.add("hbd-active");
+            if (distance < radius * DEAD_ZONE_PERCENT) {
+                setKeys("");
+                knob.classList.remove("hbd-active");
+                return;
             }
 
-            function up(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                pressed.delete(key);
-                updateKeys();
-                button.classList.remove("hbd-active");
-                activeTouchId = null;
-            }
+            knob.classList.add("hbd-active");
 
-            // Touch events (fallback utama untuk WebView lama)
-            button.addEventListener("touchstart", function (e) {
-                activeTouchId = e.changedTouches[0].identifier;
-                down(e);
-            }, { passive: false });
+            // atan2 di layar: sumbu Y ke bawah positif, jadi 0deg = kanan,
+            // 90deg = bawah — cocok langsung dengan urutan SECTORS di atas.
+            let angleDeg = angleRad * (180 / Math.PI);
+            if (angleDeg < 0) angleDeg += 360;
 
-            button.addEventListener("touchend", function (e) {
-                up(e);
-            }, { passive: false });
-
-            button.addEventListener("touchcancel", function (e) {
-                up(e);
-            }, { passive: false });
-
-            // Pointer events (untuk browser modern)
-            button.addEventListener("pointerdown", function (e) {
-                if (activeTouchId !== null) return; // hindari double-fire
-                down(e);
-                try { button.setPointerCapture(e.pointerId); } catch (error) {}
-            }, { passive: false });
-
-            button.addEventListener("pointerup", up, { passive: false });
-            button.addEventListener("pointercancel", up, { passive: false });
-            button.addEventListener("pointerleave", up, { passive: false });
-
-            return button;
+            // Cari sektor 45° terdekat (snap)
+            const sectorIndex = Math.round(angleDeg / 45) % 8;
+            setKeys(SECTORS[sectorIndex].keys);
         }
 
-        dpad.appendChild(createButton("hbd-up", "▲", "w"));
-        dpad.appendChild(createButton("hbd-left", "◀", "a"));
-        dpad.appendChild(createButton("hbd-right", "▶", "d"));
-        dpad.appendChild(createButton("hbd-down", "▼", "s"));
+        function pointerDown(clientX, clientY) {
+            handleMove(clientX, clientY);
+        }
+
+        // Touch events (fallback utama untuk WebView lama)
+        dpad.addEventListener("touchstart", function (e) {
+            e.preventDefault();
+            if (activeTouchId !== null) return;
+            const t = e.changedTouches[0];
+            activeTouchId = t.identifier;
+            pointerDown(t.clientX, t.clientY);
+        }, { passive: false });
+
+        dpad.addEventListener("touchmove", function (e) {
+            e.preventDefault();
+            for (const t of e.changedTouches) {
+                if (t.identifier === activeTouchId) {
+                    handleMove(t.clientX, t.clientY);
+                }
+            }
+        }, { passive: false });
+
+        function touchEnd(e) {
+            for (const t of e.changedTouches) {
+                if (t.identifier === activeTouchId) {
+                    activeTouchId = null;
+                    resetKeys();
+                }
+            }
+        }
+        dpad.addEventListener("touchend", touchEnd, { passive: false });
+        dpad.addEventListener("touchcancel", touchEnd, { passive: false });
+
+        // Pointer events (untuk browser modern)
+        dpad.addEventListener("pointerdown", function (e) {
+            if (activeTouchId !== null) return; // hindari double-fire kalau touch juga aktif
+            e.preventDefault();
+            activePointerId = e.pointerId;
+            try { dpad.setPointerCapture(e.pointerId); } catch (error) {}
+            pointerDown(e.clientX, e.clientY);
+        }, { passive: false });
+
+        dpad.addEventListener("pointermove", function (e) {
+            if (e.pointerId !== activePointerId) return;
+            handleMove(e.clientX, e.clientY);
+        }, { passive: false });
+
+        function pointerEnd(e) {
+            if (e.pointerId !== activePointerId) return;
+            activePointerId = null;
+            resetKeys();
+        }
+        dpad.addEventListener("pointerup", pointerEnd, { passive: false });
+        dpad.addEventListener("pointercancel", pointerEnd, { passive: false });
 
         // ========================================================
         // TAMPIL / SEMBUNYI — ikut atribut "view" pada joystick asli
@@ -325,7 +369,7 @@
         function updateVisibility() {
             const visible = originalJoystick.getAttribute("view") === "visible";
             if (visible) {
-                dpad.style.display = "grid";
+                dpad.style.display = "block";
             } else {
                 dpad.style.display = "none";
                 resetKeys();
